@@ -1,0 +1,300 @@
+#Load libraries
+from keras.models import Sequential
+from keras.layers import Dense
+from keras import optimizers
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from sklearn import preprocessing
+from sklearn.metrics import classification_report,confusion_matrix, accuracy_score
+
+plt.style.use('fivethirtyeight')
+plt.rcParams["figure.figsize"] = (12, 8) # (w, h)
+
+#Store the data set
+df = pd.read_csv('../input/datasets_228_482_diabetes.csv')
+#Look at first 7 rows of data
+df.head(7)
+
+# Prepare the dataset
+
+#Convert the data into an array
+dataset = df.values
+dataset
+
+# Get all of the rows from the first eight columns of the dataset
+X = dataset[:,0:8] 
+# Get all of the rows from the last column
+y = dataset[:,8]
+
+min_max_scaler = preprocessing.MinMaxScaler()
+X_scale = min_max_scaler.fit_transform(X)
+X_scale
+
+X_train, X_test, y_train, y_test = train_test_split(X_scale, y, test_size=0.2, random_state = 33)
+
+
+#Layer Optimization
+
+acc_scores = []
+
+for i in range(5):
+    model = Sequential()
+    n = 28
+    model.add(Dense(n, activation='relu', input_shape=( 8 ,)))
+    
+    for j in range(i):
+        n = 28
+        model.add(Dense(n, activation='relu'))
+    
+    model.add(Dense(1, activation='sigmoid'))
+
+
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    hist = model.fit(X_train, y_train,
+              batch_size=32, epochs=32, validation_split=0.2)
+    
+    print(model.summary())
+    pred = model.predict(X_test)
+    print(pred[0:3])
+    pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+    print(pred[0:3])
+    print(classification_report(y_test ,pred ))
+    print(accuracy_score(y_test,pred)*100)
+    acc_scores.append(accuracy_score(y_test,pred)*100)
+    
+    
+    model.reset_metrics()
+    
+    
+plt.plot(list(range(1,6)), acc_scores)
+plt.xlabel("Hidden Layer Number")
+plt.ylabel("Accuracy (%)")
+plt.title("Layer Number Optimization")
+plt.show()
+
+#Neuron Number Optimization
+
+acc_scores = []
+neuron_numbers = [28, 24,20, 16, 12]
+
+for i in range(len(neuron_numbers)):
+    model = Sequential()
+    n = neuron_numbers[i]
+    model.add(Dense(n, activation='relu', input_shape=(8,)))
+    model.add(Dense(n, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+
+
+    model.compile(optimizer='adam',
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    hist = model.fit(X_train, y_train,
+              batch_size=32, epochs=32, validation_split=0.2)
+    
+    print(model.summary())
+    pred = model.predict(X_test)
+    print(pred[0:3])
+    pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+    print(pred[0:3])
+    print(classification_report(y_test ,pred ))
+    print(accuracy_score(y_test,pred)*100)
+    acc_scores.append(accuracy_score(y_test,pred)*100)
+    
+    
+    model.reset_metrics()
+    
+plt.title("Neuron Number Optimization")
+plt.ylabel("Accuracy (%)")
+plt.xlabel("Neuron Numbers")
+plt.plot(["28", "24", "20", "16", "12"], acc_scores)
+
+#Activation Function Optimization
+
+acc_scores = []
+act_funcs = ['relu', 'sigmoid', 'softmax', 'selu']
+
+for i in range(len(act_funcs)):
+    model = Sequential()
+    for j in range(len(act_funcs)):
+        n = 28
+        model.add(Dense(n, activation=act_funcs[i], input_shape=(8,))) #Fonksiyonların kombinasyonları deneniyor
+        model.add(Dense(n, activation=act_funcs[j]))
+        model.add(Dense(1, activation='sigmoid'))
+
+        model.compile(optimizer='adam',
+                      loss='binary_crossentropy',
+                      metrics=['accuracy'])
+        hist = model.fit(X_train, y_train,
+                  batch_size=32, epochs=32, validation_split=0.2)
+
+        print(model.summary())
+        pred = model.predict(X_test)
+        print(pred[0:3])
+        pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+        print(pred[0:3])
+        print(classification_report(y_test ,pred ))
+        print(accuracy_score(y_test,pred)*100)
+        acc_scores.append(accuracy_score(y_test,pred)*100)
+
+
+        model.reset_metrics()
+        
+act_func_combs = []
+act_funcs_sh = ['re', 'sg', 'sm', 'sl']
+for i in range(len(act_funcs)):
+    for j in range(len(act_funcs)):
+        act_func_combs.append(act_funcs_sh[i] + "-" + act_funcs_sh[j])
+        
+plt.rcParams["figure.figsize"] = (18, 9) # (w, h)
+plt.ylabel("Accuracy (%)")
+plt.title("Activation Function Optimization")
+
+plt.plot(act_func_combs,acc_scores)
+
+plt.rcParams["figure.figsize"] = (12, 8) # (w, h)
+
+#Optimizer Optimization
+
+acc_scores = []
+optimizers = ['SGD', 'Adam', 'RMSProp', 'Adagrad', 'Adadelta', 'Adamax']
+
+for i in range(len(optimizers)):
+    model = Sequential()
+    n = 28
+    model.add(Dense(n, activation='selu', input_shape=(8,))) #Fonksiyonların kombinasyonları deneniyor
+    model.add(Dense(n, activation='selu')) #Fonksiyonların kombinasyonları deneniyor
+    model.add(Dense(1, activation='sigmoid'))
+
+    model.compile(optimizer=optimizers[i],
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    hist = model.fit(X_train, y_train,
+              batch_size=32, epochs=32, validation_split=0.2)
+
+    print(model.summary())
+    pred = model.predict(X_test)
+    print(pred[0:3])
+    pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+    print(pred[0:3])
+    print(classification_report(y_test ,pred ))
+    print(accuracy_score(y_test,pred)*100)
+    acc_scores.append(accuracy_score(y_test,pred)*100)
+
+
+    model.reset_metrics()
+    
+    plt.plot(optimizers, acc_scores)
+    
+    #Learning Rate optimization
+    
+    acc_scores = []
+learning_rates = [0.0001, 0.001, 0.01, 0.03]
+
+for i in range(len(learning_rates)):
+    model = Sequential()
+    n = 28
+    model.add(Dense(n, activation='selu', input_shape=(8,)))
+    model.add(Dense(n, activation='selu'))
+    model.add(Dense(1, activation='sigmoid'))
+    
+    optimizer = optimizers.Adam(learning_rate=learning_rates[i])
+    
+    model.compile(optimizer=optimizer,
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    hist = model.fit(X_train, y_train,
+              batch_size=32, epochs=256, validation_split=0.2)
+    
+    print(model.summary())
+    pred = model.predict(X_test)
+    print(pred[0:3])
+    pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+    print(pred[0:3])
+    print(classification_report(y_test ,pred ))
+    print(accuracy_score(y_test,pred)*100)
+    acc_scores.append(accuracy_score(y_test,pred)*100)
+    
+    
+    model.reset_metrics()
+    
+plt.title("Learning rate optimization")
+plt.ylabel("Accuracy (%)")
+plt.xlabel("Learning rates")
+plt.plot(["0.0001", "0.001", "0.01", "0.03"], acc_scores)
+plt.show()
+
+#Final Version
+
+model = Sequential()
+    n = 28
+    model.add(Dense(n, activation='selu', input_shape=(8,)))
+    model.add(Dense(n, activation='selu'))
+    model.add(Dense(1, activation='sigmoid'))
+    
+    optimizer = optimizers.Adam(learning_rate=0.001)
+    
+    model.compile(optimizer=optimizer,
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    hist = model.fit(X_train, y_train,
+              batch_size=32, epochs=256, validation_split=0.2)
+    
+    print(model.summary())
+    pred = model.predict(X_test)
+    print(pred[0:3])
+    pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+    print(pred[0:3])
+    print(classification_report(y_test ,pred ))
+    print(accuracy_score(y_test,pred)*100)
+    acc_scores.append(accuracy_score(y_test,pred)*100)
+    
+    
+    model.reset_metrics()
+    
+#visualize the training loss and the validation loss to see if the model is overfitting
+plt.plot(hist.history['loss'])
+plt.plot(hist.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Val'], loc='upper right')
+plt.show()
+
+#visualize the training accuracy and the validation accuracy to see if the model is overfitting
+plt.plot(hist.history['accuracy'])
+plt.plot(hist.history['val_accuracy'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Val'], loc='lower right')
+plt.show()
+
+X_train, X_test, y_train, y_test = train_test_split(X_scale, y, test_size=0.2, random_state = 5)
+pred = model.predict(X_test)
+print(pred[0:3])
+pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+print(pred[0:3])
+print(classification_report(y_test ,pred ))
+print(accuracy_score(y_test,pred)*100)
+
+pred = model.predict(X_train)
+pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+print(classification_report(y_train ,pred ))
+print('Confusion Matrix: \n',confusion_matrix(y_train,pred))
+print()
+print('Accuracy: ', accuracy_score(y_train,pred))
+print()
+
+from sklearn.metrics import classification_report,confusion_matrix, accuracy_score
+pred = model.predict(X_test)
+pred  = [1 if y>=0.5 else 0 for y in pred] #Threshold
+print(classification_report(y_test ,pred ))
+print('Confusion Matrix: \n',confusion_matrix(y_test,pred))
+print()
+print('Accuracy: ', accuracy_score(y_test,pred))
+print()
+
+model.evaluate(X_test, y_test)[1]
